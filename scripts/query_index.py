@@ -16,10 +16,13 @@ def search_recipes(query, top_k=5):
     distances, indices = index.search(query_embedding, top_k)
     return df.iloc[indices[0]]
 
-# 4. Test query
-query = "ingredients for chicken biryani"
-results = search_recipes(query)
+# 4. Ask user for query
+user_query = input("\nEnter your query (e.g., 'ingredients for chicken biryani'): ")
 
+# 5. Search
+results = search_recipes(user_query)
+
+# 6. Display results
 print("\nTop matching recipes:\n")
 for i, row in results.iterrows():
     print("Recipe:", row['title'])
