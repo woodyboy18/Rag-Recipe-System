@@ -1,0 +1,14 @@
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Large data files (do NOT push)
+data/recipes.csv
+data/recipes_35k_clean.csv
+data/*.index
+data/*.pkl
+
+# OS junk
+Thumbs.db
+.DS_Store
