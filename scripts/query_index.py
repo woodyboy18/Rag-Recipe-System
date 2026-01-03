@@ -17,7 +17,7 @@ def search_recipes(query, top_k=5):
     return df.iloc[indices[0]]
 
 # 4. Ask user for query
-user_query = input("\nEnter your query (e.g., 'ingredients for chicken biryani'): ")
+user_query = input("\nWhat would you like to cook? ")
 
 # 5. Search
 results = search_recipes(user_query)
