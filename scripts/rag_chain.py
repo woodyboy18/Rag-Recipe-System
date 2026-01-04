@@ -10,7 +10,9 @@ from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 
-from config import TOP_K
+from scripts.config import TOP_K
+
+
 
 
 # ================== EMBEDDINGS ==================
@@ -92,3 +94,12 @@ if __name__ == "__main__":
 
     print("\nANSWER:\n")
     print(result)
+
+def get_rag_chain():
+    return rag_chain
+
+
+def retrieve_recipes(query, k=5):
+    docs = retriever.invoke(query)
+    return docs[:k]
+
