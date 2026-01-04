@@ -4,13 +4,14 @@ from scripts.rag_chain import retrieve_recipes
 
 # ---------------- Page Config ----------------
 st.set_page_config(
-    page_title="🍽️ Recipe Recommendation Assistant",
+    page_title="Recipe Assistant",
     layout="centered"
 )
 
-st.title("🍽️ Recipe Recommendation Assistant (Google FLAN)")
+st.title("🍽️ Recipe Assistant")
 st.write(
-    "Local recipe search using FAISS + Google FLAN-T5"
+    "Local recipe search using FAISS + Google FLAN‑T5 "
+    "(Semantic + Optional Strict Keyword Matching)"
 )
 
 # ---------------- Load FLAN (cached) ----------------
@@ -22,11 +23,21 @@ def load_flan():
         max_length=256
     )
 
-flan = load_flan()
+flan = load_flan()  # (loaded for future use, not generating yet)
 
-# ---------------- User Input ----------------
-query = st.text_input(
-    "Enter your query (e.g., 'ingredients for chicken biryani'):"
+# ---------------- User Controls ----------------
+query = st.text_input("Enter your query (e.g., paneer, chicken biryani):")
+
+strict_mode = st.checkbox(
+    "Strict keyword match (only show recipes containing the exact word)"
+)
+
+top_k = st.slider(
+    "Number of recipes to show",
+    min_value=5,
+    max_value=50,
+    value=10,
+    step=5
 )
 
 # ---------------- Search ----------------
@@ -35,7 +46,11 @@ if st.button("Search Recipe"):
         st.warning("Please enter a query.")
     else:
         with st.spinner("Retrieving recipes..."):
-            docs = retrieve_recipes(query)
+            docs = retrieve_recipes(
+                query,
+                k=top_k,
+                strict=strict_mode
+            )
 
         st.subheader("📋 Top Matching Recipes")
 
@@ -43,6 +58,8 @@ if st.button("Search Recipe"):
             st.info("No matching recipes found.")
         else:
             for i, doc in enumerate(docs, 1):
-                st.markdown(f"### {i}. {doc.metadata.get('title','Unknown Recipe')}")
+                st.markdown(
+                    f"### {i}. {doc.metadata.get('title', 'Unknown Recipe')}"
+                )
                 st.write(doc.page_content)
                 st.markdown("---")

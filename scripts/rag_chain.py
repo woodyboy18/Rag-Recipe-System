@@ -99,7 +99,15 @@ def get_rag_chain():
     return rag_chain
 
 
-def retrieve_recipes(query, k=5):
+def retrieve_recipes(query, k=20, strict=False):
     docs = retriever.invoke(query)
-    return docs[:k]
 
+    if strict:
+        q = query.lower()
+        docs = [
+            d for d in docs
+            if q in d.page_content.lower()
+            or q in d.metadata.get("title", "").lower()
+        ]
+
+    return docs[:k]
