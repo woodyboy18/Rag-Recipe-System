@@ -8,7 +8,7 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("🍽️ Recipe Assistant")
+st.title("Recipe Assistant")
 st.write(
     "Local recipe search using FAISS + Google FLAN‑T5 "
     "(Semantic + Optional Strict Keyword Matching)"
@@ -26,7 +26,7 @@ def load_flan():
 flan = load_flan()  # (loaded for future use, not generating yet)
 
 # ---------------- User Controls ----------------
-query = st.text_input("Enter your query (e.g., paneer, chicken biryani):")
+query = st.text_input("Enter your query:")
 
 strict_mode = st.checkbox(
     "Strict keyword match (only show recipes containing the exact word)"
@@ -63,3 +63,5 @@ if st.button("Search Recipe"):
                 )
                 st.write(doc.page_content)
                 st.markdown("---")
+
+
