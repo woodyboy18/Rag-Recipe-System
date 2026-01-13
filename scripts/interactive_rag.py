@@ -1,5 +1,6 @@
+import json
+import os
 import faiss
-import pickle
 import requests
 import numpy as np
 import pandas as pd
@@ -9,9 +10,14 @@ from sentence_transformers import SentenceTransformer
 FAISS_INDEX_PATH = "data/recipes_faiss.index"
 METADATA_PATH = "data/recipes_metadata.pkl"
 
-TOP_K = 5
+TOP_K = 20
 OLLAMA_MODEL = "llama3"
 OLLAMA_URL = "http://localhost:11434/api/generate"
+
+# BLEU logging
+LOG_DIR = "evaluation/logs"
+LOG_PATH = os.path.join(LOG_DIR, "llama3_outputs.jsonl")
+os.makedirs(LOG_DIR, exist_ok=True)
 
 # ================= LOAD MODELS =================
 print("Loading embedding model...")
@@ -23,7 +29,7 @@ index = faiss.read_index(FAISS_INDEX_PATH)
 print("Loading recipe metadata...")
 df = pd.read_pickle(METADATA_PATH)
 
-# Ensure dataframe index is aligned with FAISS IDs
+# Ensure dataframe index aligns with FAISS IDs
 df = df.reset_index(drop=True)
 
 print("✅ RAG system ready\n")
@@ -35,8 +41,23 @@ def call_ollama(prompt):
         "prompt": prompt,
         "stream": False
     }
+
     response = requests.post(OLLAMA_URL, json=payload)
-    return response.json()["response"]
+
+    if response.status_code != 200:
+        return f"[OLLAMA HTTP ERROR {response.status_code}] {response.text}"
+
+    data = response.json()
+
+    # Safe extraction
+    if "response" in data and data["response"].strip():
+        return data["response"].strip()
+
+    if "error" in data:
+        return f"[OLLAMA ERROR] {data['error']}"
+
+    return "[ERROR] Empty or unexpected Ollama response]"
+
 
 # ================= RETRIEVE =================
 def retrieve(query, top_k=TOP_K):
@@ -87,11 +108,21 @@ Recipes:
 User request:
 {query}
 
-Respond in clear, simple, human‑readable language.
+Respond in clear, simple, human-readable language.
 Use bullet points only if the user explicitly asks for them.
 """
 
         answer = call_ollama(prompt)
+
+        # ===== BLEU LOGGING =====
+        log_entry = {
+            "query": query,
+            "reference": context,
+            "generated": answer
+        }
+
+        with open(LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry) + "\n")
 
         print("\n🤖 Answer:\n")
         print(answer)
