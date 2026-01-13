@@ -58,7 +58,7 @@ def interactive_chat():
     print("🔹 Type 'exit' to quit\n")
 
     while True:
-        query = input("🧑 Query: ").strip()
+        query = input("Enter your Query: ").strip()
         if query.lower() in ["exit", "quit"]:
             print("👋 Exiting RAG chat")
             break
@@ -70,19 +70,25 @@ def interactive_chat():
         )
 
         prompt = f"""
-You are a cooking assistant.
+You are a helpful cooking assistant.
 
-Use ONLY the information provided below.
-If the answer is not present, say:
-"I don't know based on the recipes."
+Your task:
+- Answer ONLY using the recipe information provided below.
+- Focus ONLY on recipes that clearly match the user query.
+- Ignore unrelated or irrelevant recipes.
+- Do NOT invent ingredients or steps.
+
+If information is missing, say:
+"That detail is not mentioned in the provided recipes."
 
 Recipes:
 {context}
 
-Question:
+User request:
 {query}
 
-Answer clearly and concisely.
+Respond in clear, simple, human‑readable language.
+Use bullet points only if the user explicitly asks for them.
 """
 
         answer = call_ollama(prompt)

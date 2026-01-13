@@ -1,122 +1,72 @@
 import pandas as pd
 import faiss
-import pickle
 import numpy as np
-from tqdm import tqdm
+import pickle
 from sentence_transformers import SentenceTransformer
-from langchain_core.documents import Document
+from tqdm import tqdm
 
 # ================= CONFIG =================
 CSV_PATH = "data/recipes.csv"
-FAISS_INDEX_PATH = "data/faiss.index"
-DOCSTORE_PATH = "data/documents.pkl"
 
-CHUNK_SIZE = 800
-CHUNK_OVERLAP = 100
-BATCH_SIZE = 1000   # safe for 500k rows
+FAISS_INDEX_PATH = "data/recipes_faiss.index"
+METADATA_PATH = "data/recipes_metadata.pkl"
 
-# ================= EMBEDDING MODEL =================
-model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+BATCH_SIZE = 512
 
-# ================= TEXT UTILS =================
-def clean_text(x):
-    if pd.isna(x):
-        return ""
-    return str(x)
+# ================= LOAD DATA =================
+print("Loading recipes CSV...")
+df = pd.read_csv(CSV_PATH)
 
-def build_unstructured_text(row):
-    """
-    Combine multiple columns into ONE unstructured recipe text
-    """
-    text = f"""
-    Recipe Name: {clean_text(row['Name'])}
+# Safety: keep only required columns
+required_cols = ["Name", "Description", "RecipeInstructions"]
+df = df[required_cols].fillna("")
 
-    Description:
-    {clean_text(row['Description'])}
+# Build single unstructured document per recipe
+print("Building recipe documents...")
+df["document"] = (
+    "Recipe Name: " + df["Name"] + "\n\n"
+    "Description: " + df["Description"] + "\n\n"
+    "Instructions: " + df["RecipeInstructions"]
+)
 
-    Ingredients:
-    {clean_text(row['RecipeIngredientParts'])}
+# Rename for consistency
+df = df.rename(columns={"Name": "title"})
 
-    Instructions:
-    {clean_text(row['RecipeInstructions'])}
-    """
-    return text.strip()
+# Reset index so FAISS IDs == DataFrame row IDs
+df = df.reset_index(drop=True)
 
-def chunk_text(text, chunk_size, overlap):
-    chunks = []
-    start = 0
-    while start < len(text):
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start = end - overlap
-    return chunks
+print(f"Total recipes: {len(df)}")
 
-# ================= BUILD INDEX =================
-def build_index():
-    print("Loading CSV...")
-    df = pd.read_csv(CSV_PATH)
+# ================= LOAD EMBEDDING MODEL =================
+print("Loading embedding model...")
+embed_model = SentenceTransformer(EMBEDDING_MODEL)
 
-    required_cols = [
-        "Name",
-        "Description",
-        "RecipeIngredientParts",
-        "RecipeInstructions"
-    ]
+# ================= CREATE FAISS INDEX =================
+embedding_dim = embed_model.get_sentence_embedding_dimension()
+index = faiss.IndexFlatL2(embedding_dim)
 
-    for col in required_cols:
-        assert col in df.columns, f"Missing column: {col}"
+print("Creating embeddings and building FAISS index...")
 
-    print(f"Total recipes: {len(df)}")
+for start in tqdm(range(0, len(df), BATCH_SIZE)):
+    end = start + BATCH_SIZE
+    texts = df["document"].iloc[start:end].tolist()
 
-    documents = []
-    all_embeddings = []
+    embeddings = embed_model.encode(
+        texts,
+        show_progress_bar=False,
+        convert_to_numpy=True
+    )
 
-    for i in tqdm(range(0, len(df), BATCH_SIZE)):
-        batch = df.iloc[i:i + BATCH_SIZE]
-
-        batch_texts = []
-        batch_docs = []
-
-        for idx, row in batch.iterrows():
-            raw_text = build_unstructured_text(row)
-            chunks = chunk_text(raw_text, CHUNK_SIZE, CHUNK_OVERLAP)
-
-            for chunk in chunks:
-                batch_docs.append(
-                    Document(
-                        page_content=chunk,
-                        metadata={"recipe_id": int(row["ecipeId"])}
-                    )
-                )
-                batch_texts.append(chunk)
-
-        # Embed batch
-        embeddings = model.encode(
-            batch_texts,
-            show_progress_bar=False
-        )
-
-        documents.extend(batch_docs)
-        all_embeddings.append(embeddings)
-
-    # Stack all embeddings
-    embeddings = np.vstack(all_embeddings)
-
-    # Build FAISS index
-    dim = embeddings.shape[1]
-    index = faiss.IndexFlatL2(dim)
     index.add(embeddings)
 
-    # Save index
-    faiss.write_index(index, FAISS_INDEX_PATH)
+# ================= SAVE OUTPUTS =================
+print("Saving FAISS index...")
+faiss.write_index(index, FAISS_INDEX_PATH)
 
-    # Save documents (REFERENCE TEXT FOR BLEU)
-    with open(DOCSTORE_PATH, "wb") as f:
-        pickle.dump(documents, f)
+print("Saving metadata...")
+df[["title", "document"]].to_pickle(METADATA_PATH)
 
-    print("✅ FAISS index built successfully")
-    print(f"Total chunks indexed: {len(documents)}")
-
-# ================= MAIN =================
-if __name__ == "__main__":
-    build_index()
+print("\n✅ Indexing completed successfully!")
+print(f"FAISS index saved to: {FAISS_INDEX_PATH}")
+print(f"Metadata saved to: {METADATA_PATH}")
