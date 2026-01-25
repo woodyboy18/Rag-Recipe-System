@@ -3,7 +3,7 @@ from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from nltk.tokenize import word_tokenize
 
 # ================= CONFIG =================
-INPUT_FILE = "evaluation/logs/llama3_outputs.jsonl"
+INPUT_FILE = "evaluation/logs/phi_outputs.jsonl"
 
 smoothie = SmoothingFunction().method4
 
@@ -53,12 +53,12 @@ with open(INPUT_FILE, "r", encoding="utf-8") as f:
 
         count += 1
 
-print("\n📊 BLEU Evaluation Results")
+print("\n BLEU Evaluation Results")
 print("--------------------------")
 print(f"Total evaluated samples: {count}")
 
 if count == 0:
-    print("❌ No valid samples found. Check the log file format.")
+    print(" No valid samples found. Check the log file format.")
 else:
     print(f"Average BLEU-1: {sum(bleu1_scores)/len(bleu1_scores):.4f}")
     print(f"Average BLEU-2: {sum(bleu2_scores)/len(bleu2_scores):.4f}")

@@ -11,12 +11,12 @@ FAISS_INDEX_PATH = "data/recipes_faiss.index"
 METADATA_PATH = "data/recipes_metadata.pkl"
 
 TOP_K = 20
-OLLAMA_MODEL = "llama3"
+OLLAMA_MODEL = "phi"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
 # BLEU logging
 LOG_DIR = "evaluation/logs"
-LOG_PATH = os.path.join(LOG_DIR, "llama3_outputs.jsonl")
+LOG_PATH = os.path.join(LOG_DIR, "phi_outputs.jsonl")
 os.makedirs(LOG_DIR, exist_ok=True)
 
 # ================= LOAD MODELS =================
@@ -49,7 +49,6 @@ def call_ollama(prompt):
 
     data = response.json()
 
-    # Safe extraction
     if "response" in data and data["response"].strip():
         return data["response"].strip()
 
@@ -62,7 +61,7 @@ def call_ollama(prompt):
 # ================= RETRIEVE =================
 def retrieve(query, top_k=TOP_K):
     q_emb = embed_model.encode([query])
-    _, indices = index.search(np.array(q_emb), top_k)
+    scores, indices = index.search(np.array(q_emb), top_k)
 
     retrieved_docs = []
     for idx in indices[0]:
@@ -71,53 +70,83 @@ def retrieve(query, top_k=TOP_K):
             f"Title: {row['title']}\n{row['document']}"
         )
 
-    return retrieved_docs
+    return retrieved_docs, indices
+
+
+
+# ================= INGREDIENT REFERENCE =================
+def extract_ingredients(retrieved_docs, indices):
+    """
+    Use dataset ground-truth ingredients as BLEU reference
+    """
+    ingredients = []
+
+    for idx in indices[0][:3]:  # top 3 matches only
+        row = df.iloc[int(idx)]
+
+        if "RecipeIngredientParts" in row:
+            ing = row["RecipeIngredientParts"]
+        elif "ingredients" in row:
+            ing = row["ingredients"]
+        else:
+            continue
+
+        if isinstance(ing, str):
+            ingredients.append(ing.replace("c(", "").replace(")", "").replace('"', ""))
+
+    return " ".join(ingredients)
+
+
 
 # ================= INTERACTIVE LOOP =================
 def interactive_chat():
-    print("🔹 Interactive RAG with LLaMA‑3")
+    print("🔹 Interactive RAG with Phi (Small Language Model)")
     print("🔹 Type 'exit' to quit\n")
 
     while True:
         query = input("Enter your Query: ").strip()
         if query.lower() in ["exit", "quit"]:
-            print("👋 Exiting RAG chat")
+            print("👋 Exiting...")
             break
 
-        retrieved_docs = retrieve(query)
+        retrieved_docs, indices = retrieve(query)
 
         context = "\n\n".join(
             f"- {doc}" for doc in retrieved_docs
         )
 
         prompt = f"""
-You are a helpful cooking assistant.
+You are a recipe assistant.
 
-Your task:
-- Answer ONLY using the recipe information provided below.
-- Focus ONLY on recipes that clearly match the user query.
-- Ignore unrelated or irrelevant recipes.
-- Do NOT invent ingredients or steps.
+Below are recipe excerpts.
+Use ONLY this information to answer.
 
-If information is missing, say:
-"That detail is not mentioned in the provided recipes."
-
-Recipes:
+================ RECIPES ================
 {context}
+================ END RECIPES ============
+
+Task:
+Extract and list the ingredients for the recipe that best matches the user request.
+
+Rules:
+- Do NOT repeat the user request
+- Do NOT explain
+- If ingredients are not found, say: "Ingredients not found in provided recipes"
 
 User request:
 {query}
 
-Respond in clear, simple, human-readable language.
-Use bullet points only if the user explicitly asks for them.
+Answer:
 """
 
         answer = call_ollama(prompt)
 
-        # ===== BLEU LOGGING =====
+        # ===== BLEU LOGGING (FIXED) =====
+        reference_text = extract_ingredients(retrieved_docs, indices)
+
         log_entry = {
             "query": query,
-            "reference": context,
+            "reference": reference_text,
             "generated": answer
         }
 
@@ -127,6 +156,7 @@ Use bullet points only if the user explicitly asks for them.
         print("\n🤖 Answer:\n")
         print(answer)
         print("\n" + "-" * 70 + "\n")
+
 
 # ================= RUN =================
 if __name__ == "__main__":
