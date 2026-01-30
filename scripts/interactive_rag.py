@@ -11,12 +11,12 @@ FAISS_INDEX_PATH = "data/recipes_faiss.index"
 METADATA_PATH = "data/recipes_metadata.pkl"
 
 TOP_K = 20
-OLLAMA_MODEL = "llama3"
+OLLAMA_MODEL = "phi"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
 # BLEU logging
 LOG_DIR = "evaluation/logs"
-LOG_PATH = os.path.join(LOG_DIR, "llama3_outputs.jsonl")
+LOG_PATH = os.path.join(LOG_DIR, "phi_outputs.jsonl")
 os.makedirs(LOG_DIR, exist_ok=True)
 
 # ================= LOAD MODELS =================

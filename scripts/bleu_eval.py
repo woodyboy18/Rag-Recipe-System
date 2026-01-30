@@ -3,7 +3,7 @@ from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from nltk.tokenize import word_tokenize
 
 # ================= CONFIG =================
-INPUT_FILE = "evaluation/logs/llama3_outputs.jsonl"
+INPUT_FILE = "evaluation/logs/phi_outputs.jsonl"
 
 smoothie = SmoothingFunction().method4
 
