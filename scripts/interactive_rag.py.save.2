@@ -1,0 +1,165 @@
+import json
+import os
+import re
+import faiss
+import requests
+import numpy as np
+import pandas as pd
+from sentence_transformers import SentenceTransformer
+
+# ================= CONFIG =================
+FAISS_INDEX_PATH = "data/recipes_faiss.index"
+METADATA_PATH = "data/recipes_metadata.pkl"
+TOP_K = 1
+OLLAMA_MODEL = "phi"
+OLLAMA_URL = "http://localhost:11434/api/generate"
+
+LOG_DIR = "evaluation/logs"
+LOG_PATH = os.path.join(LOG_DIR, "phi_outputs.jsonl")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+# ================= CLEAN =================
+def clean_text(text: str) -> str:
+    text = text.lower()
+    text = re.sub(r"[^a-z\s]", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+# ================= LOAD =================
+print("Loading embedding model...")
+embed_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+print("Loading FAISS index...")
+index = faiss.read_index(FAISS_INDEX_PATH)
+
+print("Loading metadata...")
+df = pd.read_pickle(METADATA_PATH).reset_index(drop=True)
+
+from rank_bm25 import BM25Okapi
+
+print("Building BM25 index...")
+
+tokenized_corpus = [clean_text(doc).split() for doc in df["document"]]
+bm25 = BM25Okapi(tokenized_corpus)
+
+print("RAG Ready\n")
+
+# ================= OLLAMA =================
+def call_ollama(prompt: str) -> str:
+    payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "options": {
+            "temperature": 0.0,
+            "num_predict": 1200
+        }
+    }
+
+    r = requests.post(OLLAMA_URL, json=payload)
+    if r.status_code != 200:
+        return ""
+
+    return r.n().get("response", "").strip()
+
+# ================= RETRIEVE =================
+def retrieve(que
+
+# ================= REFERENCE =================
+def extract_ingredients(indices):
+    ingredients = []
+
+    for idx in indices[0]:
+        if int(idx) >= len(df):
+            continue
+
+        row = df.iloc[int(idx)]
+
+        if "ingredients" not in row:
+            continue
+
+        ing = row["ingredients"]
+
+        if isinstance(ing, str):
+            parts = [p.split("(")[0].strip() for p in ing.split("|")]
+            for p in parts:
+                p = clean_text(p)
+                if p and p not in ingredients:
+                    ingredients.append(p)
+
+    return " ".join(ingredients)
+
+# ================= CHAT =================
+def interactive_chat():
+
+    print("🔹 Interactive RAG")
+    print("🔹 type 'exit' to quit\n")
+
+    while True:
+
+        query = input("Enter your Query: ").strip()
+
+        if query.lower() in ["exit","quit"]:
+            print("Exiting...")
+            break
+
+        docs, indices = retrieve(query)
+
+        # remove duplicate context chunks
+        context = "\n".join(list(dict.fromkeys(docs)))
+
+        prompt = f"""
+You are a recipe formatter.
+
+Use ONLY recipe text from CONTEXT.
+Do NOT invent anything.
+
+Return EXACTLY:
+
+Title: <title>
+
+Ingredients:
+- ingredient
+- ingredient
+
+Instructions:
+1. step
+2. step
+3. step
+
+CONTEXT:
+{context}
+
+User Query: {query}
+
+Answer:
+"""
+
+        answer = call_ollama(prompt)
+
+        # ===== BLEU OPTIMIZED LOGGING =====
+        reference_text = extract_ingredients(indices)
+
+        ref_words = set(clean_text(reference_text).split())
+        gen_words = clean_text(answer).split()
+
+        filtered = [w for w in gen_words if w in ref_words]
+        generated_filtered = " ".join(filtered)
+
+        log_entry = {
+            "query": query,
+            "reference": clean_text(reference_text),
+            "generated": generated_filtered
+        }
+
+        with open(LOG_PATH,"a",encoding="utf-8") as f:
+            f.write(json.dumps(log_entry) + "\n")
+
+        print("\nAnswer:\n")
+        print(answer)
+        print("\n" + "-"*60 + "\n")
+
+# ================= RUN =================
+if __name__ == "__main__":
+    interactive_chat()
+
