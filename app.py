@@ -1,67 +1,32 @@
 import streamlit as st
-from transformers import pipeline
-from scripts.rag_chain import retrieve_recipes
+from interactive_rag import answer_query
 
-# ---------------- Page Config ----------------
-st.set_page_config(
-    page_title="Recipe Assistant",
-    layout="centered"
-)
+st.set_page_config(page_title="Recipe RAG")
 
-st.title("Recipe Assistant")
-st.write(
-    "Local recipe search using FAISS + Google FLAN‑T5 "
-    "(Semantic + Optional Strict Keyword Matching)"
-)
+st.title("🍲 Recipe RAG Chatbot")
 
-# ---------------- Load FLAN (cached) ----------------
-@st.cache_resource
-def load_flan():
-    return pipeline(
-        "text2text-generation",
-        model="google/flan-t5-base",
-        max_length=256
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+prompt = st.chat_input("Ask a recipe question...")
+
+if prompt:
+    st.session_state.messages.append(
+        {"role": "user", "content": prompt}
     )
 
-flan = load_flan()  # (loaded for future use, not generating yet)
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-# ---------------- User Controls ----------------
-query = st.text_input("Enter your query:")
+    response = answer_query(prompt)
 
-strict_mode = st.checkbox(
-    "Strict keyword match (only show recipes containing the exact word)"
-)
+    with st.chat_message("assistant"):
+        st.markdown(response)
 
-top_k = st.slider(
-    "Number of recipes to show",
-    min_value=5,
-    max_value=50,
-    value=10,
-    step=5
-)
-
-# ---------------- Search ----------------
-if st.button("Search Recipe"):
-    if query.strip() == "":
-        st.warning("Please enter a query.")
-    else:
-        with st.spinner("Retrieving recipes..."):
-            docs = retrieve_recipes(
-                query,
-                k=top_k,
-                strict=strict_mode
-            )
-
-        st.subheader("📋 Top Matching Recipes")
-
-        if not docs:
-            st.info("No matching recipes found.")
-        else:
-            for i, doc in enumerate(docs, 1):
-                st.markdown(
-                    f"### {i}. {doc.metadata.get('title', 'Unknown Recipe')}"
-                )
-                st.write(doc.page_content)
-                st.markdown("---")
-
-
+    st.session_state.messages.append(
+        {"role": "assistant", "content": response}
+    )

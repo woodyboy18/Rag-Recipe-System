@@ -1,5 +1,10 @@
-import json
 import os
+import sys
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(PROJECT_ROOT)
+
+import json
 import re
 import faiss
 import requests
@@ -7,15 +12,19 @@ import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 
+from memory.conversation_memory import save_turn
+from memory.memory_retriever import retrieve_memory
+from constraints.constraint_extractor import extract_constraints
+
 # ================= CONFIG =================
 FAISS_INDEX_PATH = "data/recipes_faiss.index"
 METADATA_PATH = "data/recipes_metadata.pkl"
-TOP_K = 1
-OLLAMA_MODEL = "gemma:2b"
+TOP_K = 5
+OLLAMA_MODEL = "qwen:0.5b"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
 LOG_DIR = "evaluation/logs"
-LOG_PATH = os.path.join(LOG_DIR, "gemma_outputs.jsonl")
+LOG_PATH = os.path.join(LOG_DIR, "qwen_outputs.jsonl")
 os.makedirs(LOG_DIR, exist_ok=True)
 
 # ================= CLEAN =================
@@ -52,7 +61,7 @@ def call_ollama(prompt: str) -> str:
         "stream": False,
         "options": {
             "temperature": 0.0,
-            "num_predict": 1200
+            "num_predict": 500
         }
     }
 
@@ -121,6 +130,18 @@ def interactive_chat():
 
         query = input("Enter your Query: ").strip()
 
+        conversation_history = retrieve_memory(query)
+
+        constraints = extract_constraints(query)
+
+        print("\n========== MEMORY ==========")
+        print(conversation_history)
+        print("============================\n")
+
+        print("\n========== CONSTRAINTS ==========")
+        print(constraints)
+        print("=================================\n")
+
         if query.lower() in ["exit","quit"]:
             print("Exiting...")
             break
@@ -131,14 +152,32 @@ def interactive_chat():
         context = "\n".join(list(dict.fromkeys(docs)))
 
         prompt = f"""
-You are a strict recipe formatter.
+You are a Memory-Augmented Conversational Culinary Assistant.
 
-Use ONLY the information from CONTEXT.
-Do NOT repeat the instructions or system text.
-Do NOT add anything outside the context.
-Do NOT explain anything.
+Your task is to answer the user's query using ONLY the recipes provided in the CONTEXT.
 
-Return ONLY in this format:
+Previous Conversation:
+{conversation_history}
+
+Current User Constraints:
+{constraints}
+
+Recipe Context:
+{context}
+
+Current User Query:
+{query}
+
+Instructions:
+
+1. Always use ONLY the Recipe Context.
+2. Do NOT invent ingredients or cooking steps.
+3. If the current query refers to a previous recipe (for example "I don't have eggs", "make it vegetarian", "give another option"), use the Previous Conversation to understand the user's intent.
+4. Respect all extracted constraints such as meal type, diet, cooking time and ingredient restrictions.
+5. If no suitable recipe exists in the Recipe Context, reply exactly:
+Recipe not found in database.
+
+Return ONLY in the following format.
 
 Title: <recipe title>
 
@@ -151,18 +190,13 @@ Instructions:
 2. step
 3. step
 
-If the recipe is not found in CONTEXT, return:
-"Recipe not found in database."
-
-CONTEXT:
-{context}
-
-User Query: {query}
-
 Answer:
 """
 
         answer = call_ollama(prompt)
+
+# ================= SAVE MEMORY =================
+        save_turn(query, answer, constraints)
 
         # ===== BLEU OPTIMIZED LOGGING =====
         reference_text = extract_ingredients(indices)
@@ -189,4 +223,3 @@ Answer:
 # ================= RUN =================
 if __name__ == "__main__":
     interactive_chat()
-
