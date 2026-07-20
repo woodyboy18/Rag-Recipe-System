@@ -16,6 +16,8 @@ from memory.conversation_memory import save_turn
 from memory.memory_retriever import retrieve_memory
 from constraints.constraint_extractor import extract_constraints
 
+from constraints.constraint_extractor import extract_constraints
+from substitution.ingredient_filter import filter_recipes
 # ================= CONFIG =================
 FAISS_INDEX_PATH = "data/recipes_faiss.index"
 METADATA_PATH = "data/recipes_metadata.pkl"
@@ -61,7 +63,7 @@ def call_ollama(prompt: str) -> str:
         "stream": False,
         "options": {
             "temperature": 0.0,
-            "num_predict": 500
+            "num_predict": 200
         }
     }
 
@@ -145,11 +147,25 @@ def interactive_chat():
         if query.lower() in ["exit","quit"]:
             print("Exiting...")
             break
+        
 
         docs, indices = retrieve(query)
 
-        # remove duplicate context chunks
+# Apply ingredient filtering
+        docs = filter_recipes(
+            docs,
+            constraints["ingredients_to_avoid"]
+        )
+
+# If every recipe is removed
+        if len(docs) == 0:
+            print("\nNo recipe found after applying ingredient constraints.\n")
+            continue
+
+# remove duplicate context chunks
         context = "\n".join(list(dict.fromkeys(docs)))
+
+
 
         prompt = f"""
 You are a Memory-Augmented Conversational Culinary Assistant.
