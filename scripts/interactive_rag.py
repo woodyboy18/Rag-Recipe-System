@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 
+from query.query_rewriter import rewrite_query
+
 from memory.conversation_memory import save_turn
 from memory.memory_retriever import retrieve_memory
 from constraints.constraint_extractor import extract_constraints
@@ -21,7 +23,7 @@ from substitution.ingredient_filter import filter_recipes
 # ================= CONFIG =================
 FAISS_INDEX_PATH = "data/recipes_faiss.index"
 METADATA_PATH = "data/recipes_metadata.pkl"
-TOP_K = 5
+TOP_K = 20 #tokens
 OLLAMA_MODEL = "qwen:0.5b"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
@@ -149,7 +151,21 @@ def interactive_chat():
             break
         
 
-        docs, indices = retrieve(query)
+        rewritten_query = rewrite_query(
+            query,
+            conversation_history,
+            constraints
+        )
+
+        print("\nRewritten Query:", rewritten_query)
+
+        docs, indices = retrieve(rewritten_query)
+
+        print("\nRetrieved Recipes:")
+
+        for i, doc in enumerate(docs):
+            print(f"\nRecipe {i+1}")
+            print(doc[:250])
 
 # Apply ingredient filtering
         docs = filter_recipes(
@@ -202,9 +218,9 @@ Ingredients:
 - item
 
 Instructions:
-1. step
-2. step
-3. step
+1. 
+2. 
+3. 
 
 Answer:
 """

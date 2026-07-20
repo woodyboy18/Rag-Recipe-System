@@ -1,5 +1,6 @@
 import re
 
+from substitution.substitutions import SUBSTITUTIONS
 
 def rewrite_query(query, conversation_history, constraints):
     """
@@ -74,13 +75,24 @@ def rewrite_query(query, conversation_history, constraints):
 
         match = re.search(pattern, query)
 
-        if match:
+    if match:
 
-            ingredient = match.group(1).strip()
+        ingredient = match.group(1).strip().lower()
 
-            retrieval_parts.append(f"without {ingredient}")
+        # Clean extra words that may be captured
+        ingredient = ingredient.replace("please generate a recipe", "").strip()
 
-            return " ".join(retrieval_parts)
+        # Look for a substitution
+        substitute = SUBSTITUTIONS.get(ingredient)
+
+        if substitute:
+            retrieval_parts.append(substitute)
+        else:
+            # If no substitute exists, keep the ingredient
+            retrieval_parts.append(ingredient)
+
+        return " ".join(dict.fromkeys(retrieval_parts))
+
 
     # ---------- Fresh query ----------
 

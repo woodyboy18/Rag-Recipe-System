@@ -1,1 +1,28 @@
-[]
+[
+    {
+        "user": "give me a high protein breakfast",
+        "assistant": "Title: High Protein Breakfast\nIngredients: \n- 1 cup nonfat yogurt (I use Dannon Light n Fit), \n- 1/4 cup skim milk, \n- 1/4 cup oat bran, \n- 1/4 cup wheat germ, \n- 1/2 scoop protein powder (I use vanilla), \n- 1 tablespoon peanut butter.",
+        "constraints": {
+            "meal": "breakfast",
+            "diet": null,
+            "protein": "high",
+            "time": null,
+            "calories": null,
+            "ingredients_to_avoid": [],
+            "cuisine": null
+        }
+    },
+    {
+        "user": "generate a recipe for mutton with rice",
+        "assistant": "The recipe for mutton with rice is \"Mutton with Rice\".",
+        "constraints": {
+            "meal": null,
+            "diet": null,
+            "protein": null,
+            "time": null,
+            "calories": null,
+            "ingredients_to_avoid": [],
+            "cuisine": null
+        }
+    }
+]
