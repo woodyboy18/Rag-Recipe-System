@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 
+from memory.retrieval_cache import save_retrieval_cache
+
 from query.query_rewritter import rewrite_query
 
 from memory.conversation_memory import save_turn
@@ -204,12 +206,13 @@ Current User Query:
 
 Instructions:
 
-1. Always use ONLY the Recipe Context.
-2. Do NOT invent ingredients or cooking steps.
-3. Do not generate multiple recipes with same title.
-4. If the current query refers to a previous recipe (for example "I don't have eggs", "make it vegetarian", "give another option"), use the Previous Conversation to understand the user's intent.
-5. Respect all extracted constraints such as meal type, diet, cooking time and ingredient restrictions.
-6. If no suitable recipe exists in the Recipe Context, reply exactly:
+1. Generate ONLY One Recipe
+2. Always use ONLY the Recipe Context.
+3. Do NOT invent ingredients or cooking steps.
+4. Do not generate multiple recipes with same title.
+5. If the current query modifies a previous request (e.g., "I don't have eggs", "without yogurt", "make it vegetarian"), use only the filtered Recipe Context provided.
+6. Respect all extracted constraints such as meal type, diet, cooking time and ingredient restrictions.
+7. If no suitable recipe exists in the Recipe Context, reply exactly:
 Recipe not found in database.
 
 Return ONLY one complete recipe in the following format.
