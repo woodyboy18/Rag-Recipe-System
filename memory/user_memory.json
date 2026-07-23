@@ -1,1 +1,58 @@
-[]
+[
+    {
+        "user": "generate a high protein breakfast",
+        "assistant": "Title: Smoothie Bowl\nIngredients: 1 cup frozen berries, 1/4 cup almond milk, 1 scoop vanilla extract, 1 tablespoon peanut butter\nInstructions: In a blender, combine the frozen berries, almond milk, vanilla extract, and peanut butter. Blend until smooth.\nAnswer:\nTitle: Avocado Toast\nIngredients: 2 slices of bread, sliced avocado, salt\nInstructions: In a bowl, mix together the sliced avocado, salt. Place two slices of bread on top of the avocado mixture. Cut the bread in half and serve hot.",
+        "constraints": {
+            "meal": "breakfast",
+            "diet": null,
+            "protein": "high",
+            "time": null,
+            "calories": null,
+            "ingredients_to_avoid": [],
+            "cuisine": null
+        }
+    },
+    {
+        "user": "i do not have almond milk",
+        "assistant": "Title: Avocado Toast\n\nIngredients:\n\n- 1 ripe avocado, mashed\n- 1/4 cup whole wheat toast\n- 1/4 cup sliced apples\n- 1/4 cup crumbled feta cheese\n\nInstructions:\n\n1. Preheat your oven to 375\u00b0F (190\u00b0C).\n2. Toast the bread in a toaster or oven-safe pan.\n3. Spread the mashed avocado on one slice of toast.\n4. Add sliced apples, crumbled feta cheese, and any other desired toppings.\n5. Place the entire stack of toast slices on the prepared bread slice.\n6. Bake for 10-12 minutes, or until the toast is golden brown and the crust is crispy.\n7. Remove from oven and let cool for a few minutes before serving.\n\nAnswer: Avocado Toast is a delicious breakfast that combines the flavors of avocado, toast, apples, feta cheese, and any other desired toppings. Enjoy your delicious Avocado",
+        "constraints": {
+            "meal": null,
+            "diet": null,
+            "protein": null,
+            "time": null,
+            "calories": null,
+            "ingredients_to_avoid": [
+                "almond milk"
+            ],
+            "cuisine": null
+        }
+    },
+    {
+        "user": "i do not  have a avacado",
+        "assistant": "Title: Avocado Toast with Salsa\nIngredients: 4 slices whole wheat pita bread, 1/4 cup skim milk, 1/4 cup oat bran, 1/4 cup wheat germ, 1/2 scoop protein powder (I use vanilla), 1 tablespoon peanut butter.\nInstructions:\n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1. 2. 3. \n1",
+        "constraints": {
+            "meal": null,
+            "diet": null,
+            "protein": null,
+            "time": null,
+            "calories": null,
+            "ingredients_to_avoid": [],
+            "cuisine": null
+        }
+    },
+    {
+        "user": "I do not have Salsa",
+        "assistant": "Title: Avocado Toast with Salsa\n\nIngredients:\n\n- 1 (6 ounce) can tuna in water, drained, 1/4 cup skim milk, 1/4 cup oat bran, 1/4 cup wheat germ, 1/2 scoop protein powder (I use vanilla), 1 tablespoon peanut butter.\n\nInstructions:\n\n1. Preheat your oven to 375\u00b0F (190\u00b0C).\n\n2. In a large bowl, combine the canned tuna, skim milk, and oat bran. Mix well.\n\n3. Add the wheat germ, protein powder, and peanut butter to the mixture. Mix until evenly distributed.\n\n4. Pour the mixture into prepared baking dish. If using a 9x13 inch baking dish, measure accordingly.\n\n5. Bake for 20-25 minutes, or until a toothpick inserted into the center comes out clean.\n\n6. Let the baked goods cool in the pan for about 5 minutes before serving.\n\nAnswer",
+        "constraints": {
+            "meal": null,
+            "diet": null,
+            "protein": null,
+            "time": null,
+            "calories": null,
+            "ingredients_to_avoid": [
+                "salsa"
+            ],
+            "cuisine": null
+        }
+    }
+]

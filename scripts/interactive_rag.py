@@ -25,7 +25,7 @@ from substitution.ingredient_filter import filter_recipes
 # ================= CONFIG =================
 FAISS_INDEX_PATH = "data/recipes_faiss.index"
 METADATA_PATH = "data/recipes_metadata.pkl"
-TOP_K = 20 #tokens
+TOP_K = 5 #tokens
 OLLAMA_MODEL = "qwen:0.5b"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
